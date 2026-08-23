@@ -85,7 +85,6 @@ function setLoading(isLoading) {
   input.disabled = isLoading;
   removeFileButton.disabled = isLoading;
   statusPanel.hidden = !isLoading;
-  submitButton.classList.toggle("is-loading", isLoading);
 
   window.clearTimeout(phaseTimer);
   if (isLoading) {
@@ -156,7 +155,6 @@ async function submitDocument(event) {
 
 function resetWorkspace() {
   setFile(null);
-  clearError();
   results.hidden = true;
   summaryText.textContent = "";
   keyPoints.replaceChildren();

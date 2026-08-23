@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import io
-import os
+from pathlib import Path
 import subprocess
 import unittest
 from types import SimpleNamespace
@@ -109,9 +109,8 @@ class DocumentServiceTests(unittest.TestCase):
 
         self.assertEqual(context.exception.code, "document_too_long")
 
-    @patch("document_service.os.unlink", wraps=os.unlink)
     @patch("document_service.subprocess.run")
-    def test_image_ocr_uses_safe_command_and_cleans_up(self, run_mock, unlink_mock) -> None:
+    def test_image_ocr_uses_safe_command_and_cleans_up(self, run_mock) -> None:
         run_mock.return_value = SimpleNamespace(returncode=0, stdout="OCR text\n")
 
         result = extract_document(upload("scan.png", b"\x89PNG\r\n\x1a\nimage"))
@@ -122,8 +121,7 @@ class DocumentServiceTests(unittest.TestCase):
         self.assertEqual(command[0], "tesseract")
         self.assertEqual(command[2:], ["stdout", "--psm", "3", "-l", "eng"])
         self.assertFalse(run_mock.call_args.kwargs["shell"])
-        unlink_mock.assert_any_call(command[1])
-        self.assertFalse(os.path.exists(command[1]))
+        self.assertFalse(Path(command[1]).exists())
 
     @patch("document_service.subprocess.run", side_effect=FileNotFoundError)
     def test_missing_tesseract_has_service_error(self, _run_mock) -> None:
