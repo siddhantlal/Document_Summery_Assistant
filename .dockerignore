@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.venv
+__pycache__
+*.py[cod]
+.coverage
+htmlcov
+tmp
+tests
+instructions.md
+requirement.md
+requirement.pdf
+README.md

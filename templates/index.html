@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Turn PDFs and scanned images into concise summaries and key points."
+    >
+    <title>Briefly — Document Summary Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="Briefly home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M7 3.75h7.4L18 7.35v12.9H7z"></path>
+              <path d="M14 3.75v4h4M9.5 11h6M9.5 14h6M9.5 17h4"></path>
+            </svg>
+          </span>
+          <span>Briefly</span>
+        </a>
+        <span class="header-note">Private by design</span>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="page-title">
+          <p class="eyebrow">DOCUMENT SUMMARY ASSISTANT</p>
+          <h1 id="page-title">The important parts,<br><span>without the long read.</span></h1>
+          <p class="hero-copy">
+            Upload a PDF or scanned image and get a clear summary with the ideas
+            that matter most.
+          </p>
+        </section>
+
+        <section class="workspace" aria-label="Document summarizer">
+          <form id="summary-form" novalidate>
+            <div
+              id="drop-zone"
+              class="drop-zone"
+              tabindex="0"
+              role="button"
+              aria-controls="document-input"
+              aria-describedby="upload-help"
+            >
+              <input
+                id="document-input"
+                name="document"
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                hidden
+              >
+              <div class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 15V4m0 0L8 8m4-4 4 4M5 14v5h14v-5"></path>
+                </svg>
+              </div>
+              <p class="drop-title">Drop your document here</p>
+              <p class="drop-divider"><span>or</span></p>
+              <span class="browse-button">Browse files</span>
+              <p id="upload-help" class="upload-help">PDF, PNG or JPEG · Up to 10 MB</p>
+            </div>
+
+            <div id="file-card" class="file-card" hidden>
+              <span class="file-type-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 3.75h7.4L18 7.35v12.9H7z"></path>
+                  <path d="M14 3.75v4h4"></path>
+                </svg>
+              </span>
+              <span class="file-details">
+                <strong id="file-name"></strong>
+                <span id="file-size"></span>
+              </span>
+              <button id="remove-file" class="icon-button" type="button" aria-label="Remove file">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m7 7 10 10M17 7 7 17"></path>
+                </svg>
+              </button>
+            </div>
+
+            <fieldset class="length-fieldset">
+              <legend>Summary length</legend>
+              <div class="length-options">
+                <label>
+                  <input type="radio" name="length" value="short">
+                  <span><strong>Short</strong><small>~100 words</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="length" value="medium" checked>
+                  <span><strong>Medium</strong><small>~200 words</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="length" value="long">
+                  <span><strong>Long</strong><small>~350 words</small></span>
+                </label>
+              </div>
+            </fieldset>
+
+            <button id="submit-button" class="primary-button" type="submit" disabled>
+              <span>Summarize document</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14m-5-5 5 5-5 5"></path>
+              </svg>
+            </button>
+          </form>
+
+          <div id="status-panel" class="status-panel" role="status" aria-live="polite" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>
+              <strong id="status-title">Extracting text</strong>
+              <small id="status-detail">Reading your document securely…</small>
+            </span>
+          </div>
+
+          <div id="error-panel" class="error-panel" role="alert" hidden>
+            <span aria-hidden="true">!</span>
+            <p id="error-message"></p>
+          </div>
+        </section>
+
+        <section id="results" class="results" aria-labelledby="results-title" hidden>
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow">YOUR SUMMARY</p>
+              <h2 id="results-title">Ready to read</h2>
+            </div>
+            <button id="copy-summary" class="secondary-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 8h9v11H9zM6 15H4V5h9v2"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+          </div>
+
+          <article class="summary-card">
+            <p id="summary-text"></p>
+          </article>
+
+          <article class="points-card">
+            <h3>Key points</h3>
+            <ul id="key-points"></ul>
+          </article>
+
+          <div class="result-footer">
+            <p id="result-meta"></p>
+            <button id="start-over" class="text-button" type="button">Summarize another document</button>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 10V8a5 5 0 0 1 10 0v2M5 10h14v10H5z"></path>
+          </svg>
+          Your document is processed temporarily and never stored.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

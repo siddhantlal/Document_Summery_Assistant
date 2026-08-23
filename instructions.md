@@ -98,14 +98,6 @@ After implementation:
 
 ---
 
-## Special Rules for This Project
-
-- **DO NOT modify model architecture files** (`modle.py`) without explicit user approval and a Phase 2 analysis.
-- **DO NOT change training pipeline logic** (`train.py`) without first reading the existing implementation and confirming the change scope.
-- **All experiment results are sacred** — never delete, overwrite, or modify CSV result files in `results/`.
-- **When in doubt, ask.** A 10-second question saves 10 minutes of wrong code.
-
----
 
 ## Response Format Enforcement
 
