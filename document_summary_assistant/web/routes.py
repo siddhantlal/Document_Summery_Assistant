@@ -56,7 +56,7 @@ def health() -> Response:
       {
           "status": "ok",
           "dependencies": {
-              "gemini_configured": is_configured(),
+              "nvidia_configured": is_configured(),
               "ocr_available": ocr_available(),
           },
       }

@@ -48,7 +48,7 @@ class RoutesTest(unittest.TestCase):
         {
             "status": "ok",
             "dependencies": {
-                "gemini_configured": True,
+                "nvidia_configured": True,
                 "ocr_available": True,
             },
         },

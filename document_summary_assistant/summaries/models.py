@@ -25,7 +25,6 @@ class SummaryLength:
 
   words: int
   key_points: int
-  max_tokens: int
 
 
 @dataclass(frozen=True)
@@ -37,7 +36,7 @@ class GeneratedSummary:
 
 
 SUMMARY_LENGTHS = {
-    "short": SummaryLength(words=100, key_points=3, max_tokens=700),
-    "medium": SummaryLength(words=200, key_points=5, max_tokens=1_200),
-    "long": SummaryLength(words=350, key_points=7, max_tokens=1_800),
+    "short": SummaryLength(words=100, key_points=3),
+    "medium": SummaryLength(words=200, key_points=5),
+    "long": SummaryLength(words=350, key_points=7),
 }

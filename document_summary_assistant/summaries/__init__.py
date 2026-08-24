@@ -14,11 +14,11 @@
 
 """Public document summarization interface."""
 
-from document_summary_assistant.summaries.gemini import generate_summary
-from document_summary_assistant.summaries.gemini import is_configured
 from document_summary_assistant.summaries.models import GeneratedSummary
 from document_summary_assistant.summaries.models import SUMMARY_LENGTHS
 from document_summary_assistant.summaries.models import SummaryLength
+from document_summary_assistant.summaries.nvidia import generate_summary
+from document_summary_assistant.summaries.nvidia import is_configured
 
 
 __all__ = [
