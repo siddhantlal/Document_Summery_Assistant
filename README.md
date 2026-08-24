@@ -1,5 +1,7 @@
 # Briefly — Document Summary Assistant
 
+[View the live application on Render](https://document-summery-assistant.onrender.com)
+
 Briefly converts text-based PDFs and scanned PNG/JPEG images into a concise
 summary and a length-appropriate list of key points. It uses layout-aware PDF
 extraction, local Tesseract OCR, and NVIDIA NIM for summary generation.
