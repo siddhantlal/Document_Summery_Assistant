@@ -12,27 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""WSGI and local development entry point."""
+"""WSGI entry point for production application servers."""
 
 from __future__ import annotations
 
-import os
-
 from document_summary_assistant import create_app
-from document_summary_assistant.config import DEFAULT_PORT
 from document_summary_assistant.config import load_local_environment
 
 
 load_local_environment()
 app = create_app()
-
-
-def main() -> None:
-  """Run the local development server."""
-
-  port = int(os.getenv("PORT", str(DEFAULT_PORT)))
-  app.run(host="0.0.0.0", port=port, debug=False)
-
-
-if __name__ == "__main__":
-  main()

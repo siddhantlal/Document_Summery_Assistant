@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Public application package for the Document Summary Assistant."""
+"""Public HTTP delivery interface."""
 
-from __future__ import annotations
+from document_summary_assistant.web.routes import blueprint
+from document_summary_assistant.web.routes import handle_large_upload
 
-from document_summary_assistant.application import create_app
 
-
-__all__ = ["create_app"]
+__all__ = ["blueprint", "handle_large_upload"]

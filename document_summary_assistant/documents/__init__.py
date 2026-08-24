@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Public application package for the Document Summary Assistant."""
+"""Public document validation and extraction interface."""
 
-from __future__ import annotations
+from document_summary_assistant.documents.image import ocr_available
+from document_summary_assistant.documents.models import ExtractedDocument
+from document_summary_assistant.documents.service import extract_document
 
-from document_summary_assistant.application import create_app
 
-
-__all__ = ["create_app"]
+__all__ = ["ExtractedDocument", "extract_document", "ocr_available"]

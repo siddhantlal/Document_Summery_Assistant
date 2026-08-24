@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Public application package for the Document Summary Assistant."""
+"""Public document summarization interface."""
 
-from __future__ import annotations
+from document_summary_assistant.summaries.gemini import generate_summary
+from document_summary_assistant.summaries.gemini import is_configured
+from document_summary_assistant.summaries.models import GeneratedSummary
+from document_summary_assistant.summaries.models import SUMMARY_LENGTHS
+from document_summary_assistant.summaries.models import SummaryLength
 
-from document_summary_assistant.application import create_app
 
-
-__all__ = ["create_app"]
+__all__ = [
+    "GeneratedSummary",
+    "SUMMARY_LENGTHS",
+    "SummaryLength",
+    "generate_summary",
+    "is_configured",
+]

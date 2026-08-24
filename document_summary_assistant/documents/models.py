@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Public application package for the Document Summary Assistant."""
+"""Immutable document extraction results."""
 
 from __future__ import annotations
 
-from document_summary_assistant.application import create_app
+from dataclasses import dataclass
 
 
-__all__ = ["create_app"]
+@dataclass(frozen=True)
+class ExtractedDocument:
+  """Text and metadata extracted from an uploaded document."""
+
+  text: str
+  file_type: str
+  pages: int | None

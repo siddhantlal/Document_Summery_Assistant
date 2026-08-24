@@ -44,7 +44,7 @@ Set the environment variables. PowerShell example:
 ```powershell
 Copy-Item .env.example .env
 # Edit .env and replace the placeholder with your real key.
-python -m app
+python -m document_summary_assistant
 ```
 
 Open `http://localhost:5000`. The app loads `.env` without an extra package and
@@ -102,7 +102,7 @@ appropriate HTTP status.
 The test suite uses the standard library and mocks external OCR/API calls:
 
 ```bash
-python -m unittest discover -s tests
+python -m unittest discover -s tests -t . -p "*_test.py"
 ```
 
 ## Project structure
@@ -113,21 +113,26 @@ starts the development server.
 
 ```text
 document_summary_assistant/
-  __init__.py    Flask application factory
-  config.py      Runtime configuration and local environment loading
-  documents.py   Upload validation, PDF extraction, and image OCR
-  errors.py      Safe errors shared across service boundaries
-  summaries.py   Gemini request construction and response validation
-  web.py         HTTP routes and JSON response mapping
-  static/        Browser behavior and styling
-  templates/     Flask page templates
-tests/           Focused unit and HTTP contract tests
-app.py           Thin WSGI and local development entry point
+  __init__.py       Stable public application interface
+  __main__.py       Local development entry point
+  application.py    Flask application assembly
+  config.py         Runtime configuration and local environment loading
+  errors.py         Safe errors shared across service boundaries
+  documents/        Upload validation, PDF extraction, and image OCR
+  summaries/        Summary models, prompts, and Gemini transport
+  web/              HTTP routes and JSON response mapping
+  static/           Browser behavior and styling
+  templates/        Flask page templates
+tests/              Tests mirroring the application subsystems
+extra/              Assessment briefs and development reference material
+app.py              Minimal production WSGI entry point
 ```
 
 Internal imports use the `document_summary_assistant` package name. Domain
-services remain callable independently of Flask, while the web module owns only
-request validation and response mapping.
+packages expose narrow public interfaces and keep provider, extraction, and
+delivery details independently testable. The `extra/` directory is excluded
+from the production container because it contains reference material rather
+than application code.
 
 Before release, also upload a text PDF and readable PNG/JPEG scan, exercise all
 three summary lengths, and confirm no temporary upload remains after processing.

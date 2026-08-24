@@ -12,11 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Public application package for the Document Summary Assistant."""
+"""Local development entry point."""
 
 from __future__ import annotations
 
-from document_summary_assistant.application import create_app
+import os
+
+from document_summary_assistant import create_app
+from document_summary_assistant.config import DEFAULT_PORT
+from document_summary_assistant.config import load_local_environment
 
 
-__all__ = ["create_app"]
+def main() -> None:
+  """Run the local development server."""
+
+  load_local_environment()
+  port = int(os.getenv("PORT", str(DEFAULT_PORT)))
+  create_app().run(host="0.0.0.0", port=port, debug=False)
+
+
+if __name__ == "__main__":
+  main()

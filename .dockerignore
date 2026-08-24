@@ -8,7 +8,5 @@ __pycache__
 htmlcov
 tmp
 tests
-instructions.md
-requirement.md
-requirement.pdf
+extra
 README.md
