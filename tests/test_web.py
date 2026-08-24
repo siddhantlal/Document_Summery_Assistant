@@ -1,3 +1,17 @@
+# Copyright 2026 Document Summary Assistant Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """HTTP contract tests for the Flask application."""
 
 from __future__ import annotations
@@ -9,14 +23,17 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import app as app_module
-from document_service import DocumentProcessingError, ExtractedDocument
+from document_summary_assistant import create_app
+from document_summary_assistant.config import load_local_environment
+from document_summary_assistant.documents import ExtractedDocument
+from document_summary_assistant.errors import DocumentProcessingError
+from document_summary_assistant.summaries import GeneratedSummary
 
 
-class AppTests(unittest.TestCase):
+class WebTests(unittest.TestCase):
     def setUp(self) -> None:
-        app_module.app.config.update(TESTING=True)
-        self.client = app_module.app.test_client()
+        self.app = create_app({"TESTING": True})
+        self.client = self.app.test_client()
 
     def test_index_renders_application(self) -> None:
         response = self.client.get("/")
@@ -24,24 +41,35 @@ class AppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Document Summary Assistant", response.data)
 
-    def test_local_environment_loader_does_not_override_existing_values(self) -> None:
+    def test_static_assets_are_packaged_with_application(self) -> None:
+        response = self.client.get("/static/app.js")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/javascript")
+        response.close()
+
+    def test_local_environment_loader_preserves_existing_values(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             env_path = Path(directory) / ".env"
             env_path.write_text(
                 "NEW_TEST_SETTING=loaded\nEXISTING_TEST_SETTING=file-value\n",
                 encoding="utf-8",
             )
-            with patch.dict(
-                os.environ, {"EXISTING_TEST_SETTING": "shell-value"}, clear=False
-            ):
+            existing_environment = {
+                "EXISTING_TEST_SETTING": "shell-value"
+            }
+            with patch.dict(os.environ, existing_environment, clear=False):
                 os.environ.pop("NEW_TEST_SETTING", None)
-                app_module.load_local_environment(str(env_path))
+                load_local_environment(env_path)
                 self.assertEqual(os.environ["NEW_TEST_SETTING"], "loaded")
-                self.assertEqual(os.environ["EXISTING_TEST_SETTING"], "shell-value")
+                self.assertEqual(
+                    os.environ["EXISTING_TEST_SETTING"],
+                    "shell-value",
+                )
                 os.environ.pop("NEW_TEST_SETTING", None)
 
-    @patch("app.ocr_available", return_value=True)
-    @patch("app.is_configured", return_value=True)
+    @patch("document_summary_assistant.web.ocr_available", return_value=True)
+    @patch("document_summary_assistant.web.is_configured", return_value=True)
     def test_health_reports_dependencies(self, _configured, _ocr) -> None:
         response = self.client.get("/health")
 
@@ -61,7 +89,10 @@ class AppTests(unittest.TestCase):
         response = self.client.post("/api/summarize", data={"length": "short"})
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.get_json()["error"]["code"], "missing_document")
+        self.assertEqual(
+            response.get_json()["error"]["code"],
+            "missing_document",
+        )
 
     def test_invalid_length_is_rejected_before_processing(self) -> None:
         response = self.client.post(
@@ -75,16 +106,18 @@ class AppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"]["code"], "invalid_length")
 
-    @patch("app.generate_summary")
-    @patch("app.extract_document")
-    def test_success_response_matches_public_contract(self, extract_mock, summary_mock) -> None:
+    @patch("document_summary_assistant.web.generate_summary")
+    @patch("document_summary_assistant.web.extract_document")
+    def test_success_response_matches_public_contract(
+        self, extract_mock, summary_mock
+    ) -> None:
         extract_mock.return_value = ExtractedDocument(
             text="A useful document", file_type="pdf", pages=2
         )
-        summary_mock.return_value = {
-            "summary": "A concise summary.",
-            "key_points": ["First", "Second", "Third"],
-        }
+        summary_mock.return_value = GeneratedSummary(
+            summary="A concise summary.",
+            key_points=("First", "Second", "Third"),
+        )
 
         response = self.client.post(
             "/api/summarize",
@@ -110,8 +143,10 @@ class AppTests(unittest.TestCase):
         )
         summary_mock.assert_called_once_with("A useful document", "short")
 
-    @patch("app.extract_document")
-    def test_service_error_is_mapped_without_internal_details(self, extract_mock) -> None:
+    @patch("document_summary_assistant.web.extract_document")
+    def test_service_error_is_mapped_without_internal_details(
+        self, extract_mock
+    ) -> None:
         def fail_extraction(uploaded_file):
             uploaded_file.close()
             raise DocumentProcessingError(
@@ -141,8 +176,8 @@ class AppTests(unittest.TestCase):
         response.close()
 
     def test_oversized_request_returns_json_error(self) -> None:
-        original_limit = app_module.app.config["MAX_CONTENT_LENGTH"]
-        app_module.app.config["MAX_CONTENT_LENGTH"] = 256
+        original_limit = self.app.config["MAX_CONTENT_LENGTH"]
+        self.app.config["MAX_CONTENT_LENGTH"] = 256
         try:
             response = self.client.post(
                 "/api/summarize",
@@ -152,7 +187,7 @@ class AppTests(unittest.TestCase):
                 },
             )
         finally:
-            app_module.app.config["MAX_CONTENT_LENGTH"] = original_limit
+            self.app.config["MAX_CONTENT_LENGTH"] = original_limit
 
         self.assertEqual(response.status_code, 413)
         self.assertEqual(response.get_json()["error"]["code"], "file_too_large")

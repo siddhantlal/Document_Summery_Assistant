@@ -9,3 +9,6 @@ tmp/
 .deps/
 .pytest_cache/
 .DS_Store
+coding_practices.md
+coding_practices.pdf
+instructions.md

@@ -44,7 +44,7 @@ Set the environment variables. PowerShell example:
 ```powershell
 Copy-Item .env.example .env
 # Edit .env and replace the placeholder with your real key.
-python app.py
+python -m app
 ```
 
 Open `http://localhost:5000`. The app loads `.env` without an extra package and
@@ -104,6 +104,30 @@ The test suite uses the standard library and mocks external OCR/API calls:
 ```bash
 python -m unittest discover -s tests
 ```
+
+## Project structure
+
+The application is organized as one self-contained Python package. The root
+entry point only loads local configuration, creates the Flask application, and
+starts the development server.
+
+```text
+document_summary_assistant/
+  __init__.py    Flask application factory
+  config.py      Runtime configuration and local environment loading
+  documents.py   Upload validation, PDF extraction, and image OCR
+  errors.py      Safe errors shared across service boundaries
+  summaries.py   Gemini request construction and response validation
+  web.py         HTTP routes and JSON response mapping
+  static/        Browser behavior and styling
+  templates/     Flask page templates
+tests/           Focused unit and HTTP contract tests
+app.py           Thin WSGI and local development entry point
+```
+
+Internal imports use the `document_summary_assistant` package name. Domain
+services remain callable independently of Flask, while the web module owns only
+request validation and response mapping.
 
 Before release, also upload a text PDF and readable PNG/JPEG scan, exercise all
 three summary lengths, and confirm no temporary upload remains after processing.

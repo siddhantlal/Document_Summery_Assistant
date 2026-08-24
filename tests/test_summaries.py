@@ -1,3 +1,17 @@
+# Copyright 2026 Document Summary Assistant Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Tests for the dependency-free Gemini REST client."""
 
 from __future__ import annotations
@@ -9,8 +23,10 @@ import unittest
 from urllib import error
 from unittest.mock import patch
 
-import summary_service
-from summary_service import SummaryServiceError, generate_summary
+from document_summary_assistant import summaries
+from document_summary_assistant.errors import SummaryServiceError
+from document_summary_assistant.summaries import GeneratedSummary
+from document_summary_assistant.summaries import generate_summary
 
 
 class FakeResponse:
@@ -27,13 +43,20 @@ class FakeResponse:
         return self.body
 
 
-def provider_payload(summary: str, key_points: list[str]) -> dict:
+def provider_payload(summary: str, key_points: list[object]) -> dict:
     return {
         "candidates": [
             {
                 "content": {
                     "parts": [
-                        {"text": json.dumps({"summary": summary, "key_points": key_points})}
+                        {
+                            "text": json.dumps(
+                                {
+                                    "summary": summary,
+                                    "key_points": key_points,
+                                }
+                            )
+                        }
                     ]
                 }
             }
@@ -41,7 +64,14 @@ def provider_payload(summary: str, key_points: list[str]) -> dict:
     }
 
 
-class SummaryServiceTests(unittest.TestCase):
+class SummaryTests(unittest.TestCase):
+    def test_empty_document_is_rejected_before_provider_call(self) -> None:
+        with self.assertRaises(SummaryServiceError) as context:
+            generate_summary("   ", "short")
+
+        self.assertEqual(context.exception.code, "empty_document")
+        self.assertEqual(context.exception.status_code, 400)
+
     def test_missing_api_key_is_configuration_error(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(SummaryServiceError) as context:
@@ -56,8 +86,10 @@ class SummaryServiceTests(unittest.TestCase):
 
         self.assertEqual(context.exception.code, "invalid_length")
 
-    @patch("summary_service.request.urlopen")
-    def test_request_and_response_follow_structured_contract(self, urlopen_mock) -> None:
+    @patch("document_summary_assistant.summaries.request.urlopen")
+    def test_request_and_response_follow_structured_contract(
+        self, urlopen_mock
+    ) -> None:
         urlopen_mock.return_value = FakeResponse(
             provider_payload("Accurate summary", ["One", "Two", "Three"])
         )
@@ -71,10 +103,15 @@ class SummaryServiceTests(unittest.TestCase):
 
         self.assertEqual(
             result,
-            {"summary": "Accurate summary", "key_points": ["One", "Two", "Three"]},
+            GeneratedSummary(
+                summary="Accurate summary",
+                key_points=("One", "Two", "Three"),
+            ),
         )
         api_request = urlopen_mock.call_args.args[0]
-        self.assertTrue(api_request.full_url.endswith("gemini-test:generateContent"))
+        self.assertTrue(
+            api_request.full_url.endswith("gemini-test:generateContent")
+        )
         self.assertEqual(api_request.headers["X-goog-api-key"], "secret")
         payload = json.loads(api_request.data.decode("utf-8"))
         config = payload["generationConfig"]
@@ -89,17 +126,20 @@ class SummaryServiceTests(unittest.TestCase):
 
         for name, (words, points) in expected.items():
             with self.subTest(name=name):
-                payload = summary_service._build_payload(
-                    "Document", summary_service.SUMMARY_LENGTHS[name]
+                payload = summaries._build_payload(
+                    "Document", summaries.SUMMARY_LENGTHS[name]
                 )
                 prompt = payload["contents"][0]["parts"][0]["text"]
                 schema = payload["generationConfig"]["responseJsonSchema"]
                 self.assertIn(f"approximately {words} words", prompt)
-                self.assertEqual(schema["properties"]["key_points"]["minItems"], points)
-                self.assertEqual(schema["properties"]["key_points"]["maxItems"], points)
+                key_point_schema = schema["properties"]["key_points"]
+                self.assertEqual(key_point_schema["minItems"], points)
+                self.assertEqual(key_point_schema["maxItems"], points)
 
-    @patch("summary_service.request.urlopen")
-    def test_malformed_provider_response_is_rejected(self, urlopen_mock) -> None:
+    @patch("document_summary_assistant.summaries.request.urlopen")
+    def test_malformed_provider_response_is_rejected(
+        self, urlopen_mock
+    ) -> None:
         urlopen_mock.return_value = FakeResponse({"candidates": []})
 
         with patch.dict(os.environ, {"GEMINI_API_KEY": "secret"}, clear=True):
@@ -108,8 +148,10 @@ class SummaryServiceTests(unittest.TestCase):
 
         self.assertEqual(context.exception.code, "invalid_provider_response")
 
-    @patch("summary_service.request.urlopen")
-    def test_rate_limit_becomes_retryable_service_error(self, urlopen_mock) -> None:
+    @patch("document_summary_assistant.summaries.request.urlopen")
+    def test_rate_limit_becomes_retryable_service_error(
+        self, urlopen_mock
+    ) -> None:
         urlopen_mock.side_effect = error.HTTPError(
             url="https://example.invalid",
             code=429,
@@ -125,10 +167,22 @@ class SummaryServiceTests(unittest.TestCase):
         self.assertEqual(context.exception.code, "provider_rate_limited")
         self.assertEqual(context.exception.status_code, 503)
 
-    @patch("summary_service.request.urlopen")
+    @patch("document_summary_assistant.summaries.request.urlopen")
     def test_incomplete_key_points_are_rejected(self, urlopen_mock) -> None:
         urlopen_mock.return_value = FakeResponse(
             provider_payload("Summary", ["Only one point"])
+        )
+
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "secret"}, clear=True):
+            with self.assertRaises(SummaryServiceError) as context:
+                generate_summary("Document", "short")
+
+        self.assertEqual(context.exception.code, "invalid_provider_response")
+
+    @patch("document_summary_assistant.summaries.request.urlopen")
+    def test_non_string_key_point_is_rejected(self, urlopen_mock) -> None:
+        urlopen_mock.return_value = FakeResponse(
+            provider_payload("Summary", ["One", 2, "Three"])
         )
 
         with patch.dict(os.environ, {"GEMINI_API_KEY": "secret"}, clear=True):

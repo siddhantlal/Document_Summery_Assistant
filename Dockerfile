@@ -16,9 +16,8 @@ RUN pip install --no-cache-dir --requirement requirements.txt
 RUN addgroup --system app \
     && adduser --system --ingroup app app
 
-COPY app.py document_service.py summary_service.py ./
-COPY templates ./templates
-COPY static ./static
+COPY app.py ./
+COPY document_summary_assistant ./document_summary_assistant
 
 USER app
 
